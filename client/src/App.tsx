@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import FinancialChart from './chart.tsx'
+import remarkGfm from 'remark-gfm';
 
 export default function App() {
   const [messages, setMessages] = useState<{role: string, content: string}[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const latestProfile = [...messages].reverse().find(m => m.profile)?.profile;
 
 const handleSubmit = async (e: React.FormEvent) => {
   setIsLoading(true);
@@ -35,7 +38,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     const data = await response.json();
     
     if (data.text) {
-      setMessages(prev => [...prev, { role: 'bot', content: data.text }]);
+      setMessages(prev => [...prev, { role: 'bot', content: data.text, profile: data.profile }]);
     }
   } catch (error) {
     console.error('Fetch error:', error);
@@ -43,6 +46,15 @@ const handleSubmit = async (e: React.FormEvent) => {
     setIsLoading(false);
   }
 };
+
+const getLatestProfile = () => {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].profile) return messages[i].profile;
+  }
+  return { salary: 0, currentSavings: 0, goals: "" };
+};
+
+const currentStats = getLatestProfile();
 
   return (
     <div style={{ 
@@ -70,6 +82,17 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+<div style={{ 
+  display: 'flex', 
+  justifyContent: 'space-around', 
+  padding: '15px', 
+  background: '#1c1c1e', 
+  borderBottom: '1px solid #10b981' 
+}}>
+  <div style={{color: '#10b981'}}>💰 Salary: ${currentStats.salary}</div>
+  <div>🏦 Savings: ${currentStats.currentSavings}</div>
+  <div style={{color: '#a1a1aa'}}>🎯 Goal: {currentStats.goals}</div>
+</div>
           {messages.map((m, i) => (
             <div key={i} style={{ 
               marginBottom: '15px', 
@@ -85,11 +108,13 @@ const handleSubmit = async (e: React.FormEvent) => {
   maxWidth: '90%',
   lineHeight: '1.6'
 }}>
-  <div className="markdown-content">
-    <ReactMarkdown>
-      {m.content}
-    </ReactMarkdown>
-  </div>
+ <div className="markdown-content">
+  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+    {m.content.replace(/\[CHART_DATA:.*?\]/g, '')}
+  </ReactMarkdown>
+  
+  {m.content.includes('[CHART_DATA:') && <FinancialChart rawData={m.content} />}
+</div>
 </div>
             </div>
           ))}
