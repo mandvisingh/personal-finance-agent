@@ -172,7 +172,7 @@ const toolNode = async (state) => {
 
   return { messages: toolOutputs, profile: profileUpdate };
 };
---
+
 const workflow = new StateGraph(FinancialState)
   .addNode("summarizer", summarizerNode)
   .addNode("gatekeeper", gatekeeperNode)
@@ -204,10 +204,12 @@ app.post('/api/chat', async (req, res) => {
   } else {
     finalString = "I've updated your financial profile and processed your request.";
   }
+  const currentState = await graph.getState(config);
+const finalProfile = currentState.values.profile;
 
   res.json({ 
     text: finalString, 
-    profile: result.profile 
+    profile: finalProfile 
   });
 });
 
