@@ -4,5 +4,4 @@ buildCommand = "cd server && npm install"
 
 [deploy]
 startCommand = "cd server && node index.js"
-healthcheckPath = "/health"
 restartPolicyType = "on_failure"
