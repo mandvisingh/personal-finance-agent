@@ -29,7 +29,7 @@
   margin: 0 auto;
 }
 
-/* 🚀 THE STICKY HEADER */
+/* STICKY HEADER */
 .sticky-header {
   display: flex;
   justify-content: space-around;
@@ -71,6 +71,12 @@
 .bubble.user { background-color: #10b981; color: #fff; }
 .bubble.bot { background-color: #1c1c1e; color: #fff; }
 
+/* PDF upload message bubble — slightly different tint */
+.bubble.pdf-bubble {
+  background-color: #1a2e25;
+  border: 1px solid #10b981;
+}
+
 .loading-indicator {
   text-align: left;
   margin-bottom: 15px;
@@ -83,6 +89,44 @@
   background-color: #27272a;
   font-size: 12px;
   color: #a1a1aa;
+}
+
+/* PDF preview bar — shown above the input when a file is staged */
+.pdf-preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px;
+  background-color: #111;
+  border-top: 1px solid #1a3d2e;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pdf-preview-name {
+  font-size: 13px;
+  color: #10b981;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+}
+
+.pdf-remove-btn {
+  background: none;
+  border: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pdf-remove-btn:hover {
+  color: #ef4444;
 }
 
 /* Input Footer */
@@ -100,6 +144,25 @@
   max-width: 600px;
   display: flex;
   gap: 10px;
+  align-items: center;
+}
+
+.attach-button {
+  background: none;
+  border: 1px solid #444;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.2s ease;
+}
+
+.attach-button:hover {
+  border-color: #10b981;
 }
 
 .chat-input {
@@ -123,6 +186,7 @@
   align-items: center;
   justify-content: center;
   transition: transform 0.1s ease;
+  flex-shrink: 0;
 }
 
 .send-button:active { transform: scale(0.9); }
