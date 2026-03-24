@@ -4,6 +4,7 @@
   "description": "An AI agent to help with personal finances",
   "main": "index.js",
  "scripts": {
+  "start": "cd server && node index.js",
   "dev:client": "cd client && npm run dev",
   "dev:server": "cd server && node --watch index.js",
   "dev": "npm run dev:client & npm run dev:server"
