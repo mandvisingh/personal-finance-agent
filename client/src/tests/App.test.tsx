@@ -58,7 +58,6 @@ describe('App — initial render', () => {
 
   it('send button is disabled when input is empty', () => {
     render(<App />);
-    const sendBtn = screen.getByTitle ? screen.getByRole('button', { name: '' }) : null;
     // Input is empty — send button should be disabled
     const input = screen.getByPlaceholderText(/Message your finance agent/i);
     expect(input).toHaveValue('');
