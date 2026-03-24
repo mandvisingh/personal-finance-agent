@@ -14,8 +14,8 @@
   --accent-soft: #e8f4ef;
   --accent-2:    #52b788;
 
-  --user-bg:     #1a1814;
-  --user-ink:    #f7f6f3;
+  --user-bg:     #1a6b4a;
+  --user-ink:    #f0faf4;
 
   --error-bg:    #fef3f2;
   --error-border:#fecdca;
@@ -332,6 +332,7 @@ body {
   background: var(--user-bg);
   color: var(--user-ink);
   border-bottom-right-radius: var(--radius-sm);
+  border: 1px solid rgba(255,255,255,.1);
 }
 
 .bot-bubble {
@@ -350,6 +351,7 @@ body {
 .pdf-bubble {
   background: var(--pdf-bg) !important;
   border-color: var(--pdf-border) !important;
+  color: #1570ef !important;
 }
 
 /* Markdown inside bubbles */

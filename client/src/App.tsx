@@ -61,7 +61,11 @@ const formatCurrency = (n: number | null) =>
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 function FinanceApp() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const WELCOME: Message = {
+    role: 'bot',
+    content: "👋 I'm your Personal Finance Analyst. To get started, I need three things:\n\n1. **Monthly income** — your take-home salary\n2. **Current savings** — your total saved so far\n3. **Financial goal** — e.g. \"save $20k for a house\" or \"retire early\"\n\nYou can type these or upload a bank statement PDF using the 📎 button.",
+  };
+  const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
@@ -248,8 +252,8 @@ function FinanceApp() {
 
       {/* Chat */}
       <main className="chat-area">
-        {messages.length === 0 && (
-          <div className="empty-state">
+        {false && (
+          <div className="empty-state" style={{display:'none'}}>
             <div className="empty-icon"><TrendingUp size={34} /></div>
             <h1>Your personal finance analyst</h1>
             <p>Share your salary, savings, and goals — or upload a bank statement — and I'll help you build a plan.</p>

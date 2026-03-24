@@ -4,6 +4,19 @@ import { z } from "zod";
 // const require = createRequire(import.meta.url);
 // const pdfParse = require("pdf-parse");
 
+export const extractStatementTool = tool(
+  async (_args, config) => {
+    const text = config?.configurable?.state?.statementText;
+    if (!text) return "No bank statement has been uploaded in this session.";
+    return text;
+  },
+  {
+    name: "extract_statement",
+    description: "Returns the full text of the bank statement the user uploaded this session. Call this first before running spending_analysis.",
+    schema: z.object({}),
+  }
+);
+
 export const syncProfileTool = tool(
   async ({ salary, deposit, totalSavings, goals }, config) => {
     const currentState = config?.configurable?.state?.profile || {};
@@ -33,6 +46,93 @@ export const syncProfileTool = tool(
       deposit: z.number().optional(),
       totalSavings: z.number().optional(),
       goals: z.string().optional(),
+    }),
+  }
+);
+
+export const spendingAnalysisTool = tool(
+  async ({ transactions, salary }) => {
+    const CATEGORIES = ["Housing", "Food", "Transport", "Entertainment", "Subscriptions", "Other"];
+
+    // Parse transaction lines into { description, amount }
+    const lines = transactions.split("\n").map(l => l.trim()).filter(Boolean);
+    const parsed = lines.map(line => {
+      const amtMatch = line.match(/[-+]?\$?([\d,]+(\.\d{2})?)/);
+      const amount = amtMatch ? parseFloat(amtMatch[1].replace(/,/g, "")) : 0;
+      return { description: line, amount };
+    }).filter(t => t.amount > 0);
+
+    // Keyword-based categoriser
+    const RULES = [
+      { category: "Housing",       keywords: ["rent", "mortgage", "hoa", "insurance", "utilities", "electric", "gas", "water", "internet", "cable"] },
+      { category: "Food",          keywords: ["grocery", "groc", "supermarket", "whole foods", "trader joe", "safeway", "restaurant", "cafe", "coffee", "doordash", "ubereats", "grubhub", "chipotle", "mcdonald", "starbucks"] },
+      { category: "Transport",     keywords: ["uber", "lyft", "taxi", "gas station", "fuel", "parking", "toll", "transit", "metro", "subway", "train", "airline", "flight"] },
+      { category: "Entertainment", keywords: ["netflix", "hulu", "disney", "spotify", "apple music", "cinema", "theater", "concert", "amazon prime", "youtube", "gaming", "steam"] },
+      { category: "Subscriptions", keywords: ["subscription", "monthly fee", "annual fee", "membership", "gym", "fitness", "adobe", "microsoft", "google one", "icloud", "dropbox"] },
+    ];
+
+    function categorise(description) {
+      const lower = description.toLowerCase();
+      for (const rule of RULES) {
+        if (rule.keywords.some(k => lower.includes(k))) return rule.category;
+      }
+      return "Other";
+    }
+
+    // Group by category
+    const totals = Object.fromEntries(CATEGORIES.map(c => [c, 0]));
+    const byCategory = Object.fromEntries(CATEGORIES.map(c => [c, []]));
+    for (const t of parsed) {
+      const cat = categorise(t.description);
+      totals[cat] += t.amount;
+      byCategory[cat].push(t.amount);
+    }
+
+    // Flag anomalies: transactions > 2× category average
+    const anomalies = [];
+    for (const [cat, amounts] of Object.entries(byCategory)) {
+      if (amounts.length === 0) continue;
+      const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+      for (const amt of amounts) {
+        if (amt > avg * 2 && amt > 50) anomalies.push({ category: cat, amount: amt, avg: avg.toFixed(2) });
+      }
+    }
+
+    const totalSpend = Object.values(totals).reduce((a, b) => a + b, 0);
+    const monthlySalary = salary ?? 0;
+    const savingsRate = monthlySalary > 0
+      ? (((monthlySalary - totalSpend) / monthlySalary) * 100).toFixed(1)
+      : null;
+
+    // Top 3 categories by spend
+    const ranked = Object.entries(totals)
+      .filter(([, v]) => v > 0)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([cat, amt]) => `${cat}: $${amt.toFixed(2)}`);
+
+    return JSON.stringify({
+      categoryTotals: totals,
+      totalMonthlySpend: totalSpend.toFixed(2),
+      savingsRate: savingsRate ? `${savingsRate}%` : "unknown (no salary on file)",
+      top3Categories: ranked,
+      anomalies: anomalies.length > 0
+        ? anomalies.map(a => `${a.category} — $${a.amount.toFixed(2)} (avg $${a.avg})`)
+        : ["None detected"],
+      annualSavingsPotential: monthlySalary > 0
+        ? `$${((monthlySalary - totalSpend) * 12).toFixed(2)}`
+        : "unknown",
+      chartData: Object.fromEntries(Object.entries(totals).filter(([, v]) => v > 0)),
+    });
+  },
+  {
+    name: "spending_analysis",
+    description: "Categorises raw transaction text into spending buckets, flags anomalies, calculates savings rate, and returns chart-ready data. Call this whenever the user provides bank statement transactions.",
+    schema: z.object({
+      transactions: z.string().describe("Raw transaction lines from the bank statement, one per line"),
+      salary:         z.number().optional().describe("Monthly take-home salary for savings rate calculation"),
+      goals:          z.string().optional().describe("User's financial goal"),
+      currentSavings: z.number().optional().describe("Current savings balance"),
     }),
   }
 );
