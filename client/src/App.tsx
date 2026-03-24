@@ -76,7 +76,7 @@ function FinanceApp() {
   const [pendingPdf, setPendingPdf] = useState<{ file: File; base64: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const [threadId] = useState(() => crypto.randomUUID());
+  const [threadId, setThreadId] = useState(() => crypto.randomUUID());
 
   const getLatestProfile = (): Profile => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -247,7 +247,7 @@ function FinanceApp() {
         </div>
 
         <div className="sidebar-footer">
-          <button className="new-chat-btn" onClick={() => { setMessages([]); setInput(''); setPendingPdf(null); }}>
+          <button className="new-chat-btn" onClick={() => { setMessages([WELCOME]); setInput(''); setPendingPdf(null); setThreadId(crypto.randomUUID()); }}>
             + New conversation
           </button>
           <p className="privacy-note">PII is redacted before reaching the AI model.</p>
