@@ -225,3 +225,10 @@ The frontend strips this tag from the displayed text and passes the JSON to `Fin
 | `GOOGLE_API_KEY` | If using Google | — | Gemini API key |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Alias | — | Alternative Gemini key name |
 | `OPENAI_API_KEY` | If using OpenAI | — | OpenAI API key |
+
+
+## UI DESIGNS
+
+<img width="1440" height="779" alt="Screenshot 2026-03-24 at 4 01 26 PM" src="https://github.com/user-attachments/assets/03206adb-3b28-41f2-bdbe-80f7024a18ab" />
+<img width="1438" height="693" alt="Screenshot 2026-03-24 at 4 01 08 PM" src="https://github.com/user-attachments/assets/c2f18636-c649-4e93-b823-e82833848237" />
+<img width="1440" height="687" alt="Screenshot 2026-03-24 at 4 00 16 PM" src="https://github.com/user-attachments/assets/5a761f7c-5d86-4a96-acbf-fef099854c1c" />
