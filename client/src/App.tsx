@@ -58,6 +58,10 @@ interface Message {
 const formatCurrency = (n: number | null) =>
   n != null ? `$${n.toLocaleString()}` : '—';
 
+// ─── Config ───────────────────────────────────────────────────────────────────
+
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 function FinanceApp() {
@@ -132,7 +136,7 @@ function FinanceApp() {
       }]);
 
       try {
-        const res = await fetch('http://localhost:3001/api/upload-pdf', {
+        const res = await fetch(`${API_URL}/api/upload-pdf`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ base64Pdf: captured.base64, filename: captured.file.name, threadId }),
@@ -163,7 +167,7 @@ function FinanceApp() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3001/api/chat', {
+      const res = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -21,6 +21,8 @@ const apiLog = createLogger("api");
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
+app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
 app.post('/api/chat', async (req, res) => {
   const { messages, threadId } = req.body;
   const config = { configurable: { thread_id: threadId ?? "default" } };
@@ -89,5 +91,6 @@ app.post('/api/upload-pdf', async (req, res) => {
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 if (process.env.NODE_ENV !== "test") {
-  app.listen(3001, () => log.info(`Server online on :3001 · provider: ${process.env.LLM_PROVIDER || "google"}`));
+  const PORT = process.env.PORT ?? 3001;
+  app.listen(PORT, () => log.info(`Server online on :${PORT} · provider: ${process.env.LLM_PROVIDER || "google"}`));
 }
