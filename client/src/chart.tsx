@@ -1,7 +1,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const FinancialChart = ({ rawData }: { rawData: string }) => {
-  const jsonMatch = rawData.match(/\[CHART_DATA: (.*?)\]/);
+  const jsonMatch = rawData.match(/\[CHART_DATA:\s*([\s\S]*?)\]/);
   if (!jsonMatch) return null;
 
   const dataObj = JSON.parse(jsonMatch[1]);

@@ -2,13 +2,12 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { graph } from "./graph.js";
-import { prescrubText } from "./pii.js";
+import { prescrubText, prescrubWithStats } from "./pii.js";
 import { pdfParse } from "./pdf.js";
 import { createLogger } from "./logger.js";
 
 // Re-export pure utilities so existing tests keep working without path changes
 export { prescrubText } from "./pii.js";
-export { detectMode } from "./prompts.js";
 export { getMissingFields } from "./nodes.js";
 
 const app = express();
@@ -29,11 +28,16 @@ app.post('/api/chat', async (req, res) => {
   apiLog.info(`POST /api/chat — thread: ${threadId}, messages: ${messages?.length}`);
 
   try {
-    const result = await graph.invoke({ messages: [messages[messages.length - 1]] }, config);
+    const lastMsg = messages[messages.length - 1];
+    const { scrubbed, counts } = prescrubWithStats(lastMsg.content ?? "");
+    const scrubbedPreview = scrubbed.slice(0, 300);
+    const scrubbedMessage = { ...lastMsg, content: scrubbed };
+
+    const result = await graph.invoke({ messages: [scrubbedMessage] }, config);
     const last = result.messages[result.messages.length - 1];
     const text = typeof last.content === "string" ? last.content : "I've processed your request.";
     const currentState = await graph.getState(config);
-    res.json({ text, profile: currentState.values.profile });
+    res.json({ text, profile: currentState.values.profile, piiStats: { counts, preview: scrubbedPreview } });
   } catch (err) {
     apiLog.error("/api/chat failed", err);
     res.status(500).json({ error: err.message });
@@ -68,8 +72,9 @@ app.post('/api/upload-pdf', async (req, res) => {
     return res.status(422).json({ error: "PDF appears empty or image-only." });
   }
 
-  const scrubbed = prescrubText(extractedText);
-  const trimmed = scrubbed.length > 6000 ? scrubbed.slice(0, 6000) + "\n... [truncated]" : scrubbed;
+  const { scrubbed, counts } = prescrubWithStats(extractedText);
+  const trimmed = scrubbed.length > 15000 ? scrubbed.slice(0, 15000) + "\n... [truncated]" : scrubbed;
+  const scrubbedPreview = scrubbed.slice(0, 300);
 
   const uploadMessage = {
     role: "user",
@@ -81,7 +86,7 @@ app.post('/api/upload-pdf', async (req, res) => {
     const last = result.messages[result.messages.length - 1];
     const text = typeof last.content === "string" ? last.content : "Bank statement analysed.";
     const currentState = await graph.getState(config);
-    res.json({ text, profile: currentState.values.profile });
+    res.json({ text, profile: currentState.values.profile, piiStats: { counts, preview: scrubbedPreview } });
   } catch (err) {
     apiLog.error("/api/upload-pdf graph invocation failed", err);
     res.status(500).json({ error: "Analysis failed", details: err.message });

@@ -206,6 +206,30 @@ body {
   color: var(--accent);
 }
 
+.pii-shield {
+  margin-top: 10px;
+  font-size: 11px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.pii-shield summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 500;
+}
+.pii-preview {
+  margin-top: 6px;
+  font-size: 10px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--ink-3);
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
 .privacy-note {
   font-size: 10px;
   color: var(--ink-3);

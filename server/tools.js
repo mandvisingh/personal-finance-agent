@@ -52,39 +52,13 @@ export const syncProfileTool = tool(
 
 export const spendingAnalysisTool = tool(
   async ({ transactions, salary }) => {
-    const CATEGORIES = ["Housing", "Food", "Transport", "Entertainment", "Subscriptions", "Other"];
-
-    // Parse transaction lines into { description, amount }
-    const lines = transactions.split("\n").map(l => l.trim()).filter(Boolean);
-    const parsed = lines.map(line => {
-      const amtMatch = line.match(/[-+]?\$?([\d,]+(\.\d{2})?)/);
-      const amount = amtMatch ? parseFloat(amtMatch[1].replace(/,/g, "")) : 0;
-      return { description: line, amount };
-    }).filter(t => t.amount > 0);
-
-    // Keyword-based categoriser
-    const RULES = [
-      { category: "Housing",       keywords: ["rent", "mortgage", "hoa", "insurance", "utilities", "electric", "gas", "water", "internet", "cable"] },
-      { category: "Food",          keywords: ["grocery", "groc", "supermarket", "whole foods", "trader joe", "safeway", "restaurant", "cafe", "coffee", "doordash", "ubereats", "grubhub", "chipotle", "mcdonald", "starbucks"] },
-      { category: "Transport",     keywords: ["uber", "lyft", "taxi", "gas station", "fuel", "parking", "toll", "transit", "metro", "subway", "train", "airline", "flight"] },
-      { category: "Entertainment", keywords: ["netflix", "hulu", "disney", "spotify", "apple music", "cinema", "theater", "concert", "amazon prime", "youtube", "gaming", "steam"] },
-      { category: "Subscriptions", keywords: ["subscription", "monthly fee", "annual fee", "membership", "gym", "fitness", "adobe", "microsoft", "google one", "icloud", "dropbox"] },
-    ];
-
-    function categorise(description) {
-      const lower = description.toLowerCase();
-      for (const rule of RULES) {
-        if (rule.keywords.some(k => lower.includes(k))) return rule.category;
-      }
-      return "Other";
-    }
-
-    // Group by category
-    const totals = Object.fromEntries(CATEGORIES.map(c => [c, 0]));
-    const byCategory = Object.fromEntries(CATEGORIES.map(c => [c, []]));
-    for (const t of parsed) {
-      const cat = categorise(t.description);
-      totals[cat] += t.amount;
+    // Group pre-categorised transactions — categories are defined by the LLM
+    const totals = {};
+    const byCategory = {};
+    for (const t of transactions) {
+      const cat = t.category || "Other";
+      totals[cat] = (totals[cat] || 0) + t.amount;
+      byCategory[cat] = byCategory[cat] || [];
       byCategory[cat].push(t.amount);
     }
 
@@ -127,12 +101,14 @@ export const spendingAnalysisTool = tool(
   },
   {
     name: "spending_analysis",
-    description: "Categorises raw transaction text into spending buckets, flags anomalies, calculates savings rate, and returns chart-ready data. Call this whenever the user provides bank statement transactions.",
+    description: "Calculates spending totals, savings rate, anomalies, and chart data from pre-categorised transactions. YOU must categorise each transaction using your world knowledge before calling this tool.",
     schema: z.object({
-      transactions: z.string().describe("Raw transaction lines from the bank statement, one per line"),
-      salary:         z.number().optional().describe("Monthly take-home salary for savings rate calculation"),
-      goals:          z.string().optional().describe("User's financial goal"),
-      currentSavings: z.number().optional().describe("Current savings balance"),
+      transactions: z.array(z.object({
+        description: z.string(),
+        amount: z.number(),
+        category: z.string().describe("Category you choose based on the merchant — e.g. Food, Transport, Housing, Health, Entertainment, Subscriptions"),
+      })).describe("Transactions with categories assigned by you using your world knowledge of merchants"),
+      salary: z.number().optional().describe("Monthly take-home salary for savings rate calculation"),
     }),
   }
 );
@@ -158,52 +134,3 @@ export const wealthForecastTool = tool(
     }),
   }
 );
-
-/**
- * Extracts and structures transaction data from a base64-encoded bank statement PDF.
- * Returns cleaned text lines that look like financial transactions.
- */
-// export const extractFromPdfTool = tool(
-//   async ({ base64Pdf }) => {
-//     try {
-//       const buffer = Buffer.from(base64Pdf, "base64");
-//       const parsed = await pdfParse(buffer);
-//       const rawText = parsed.text;
-
-//       if (!rawText || rawText.trim().length === 0) {
-//         return JSON.stringify({ error: "No extractable text found in PDF. It may be a scanned image." });
-//       }
-
-//       // Split into lines and filter to likely transaction lines:
-//       // - contain a date pattern (MM/DD or DD/MM or YYYY-MM-DD)
-//       // - contain a dollar amount pattern
-//       const lines = rawText.split("\n").map(l => l.trim()).filter(Boolean);
-
-//       const datePattern = /\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?/;
-//       const amountPattern = /\$?\d{1,3}(,\d{3})*(\.\d{2})?/;
-
-//       const transactionLines = lines.filter(line => 
-//         datePattern.test(line) && amountPattern.test(line)
-//       );
-
-//       // Fall back to all non-header lines if no transaction lines detected
-//       const outputLines = transactionLines.length > 5 ? transactionLines : lines.slice(0, 200);
-
-//       return JSON.stringify({
-//         status: "PDF extracted successfully",
-//         pageCount: parsed.numpages,
-//         transactionCount: transactionLines.length,
-//         transactions: outputLines.join("\n"),
-//       });
-//     } catch (err) {
-//       return JSON.stringify({ error: `PDF extraction failed: ${err.message}` });
-//     }
-//   },
-//   {
-//     name: "extract_from_pdf",
-//     description: "Extracts transaction data from a base64-encoded bank statement PDF. Call this when the user uploads a PDF.",
-//     schema: z.object({
-//       base64Pdf: z.string().describe("Base64-encoded PDF content"),
-//     }),
-//   }
-// );

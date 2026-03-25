@@ -1,10 +1,3 @@
-export function detectMode(lastUserMessage) {
-  const msg = lastUserMessage.toLowerCase();
-  const forecastKeywords = ["forecast", "project", "future", "years", "retire", "compound", "invest", "growth", "worth in"];
-  if (forecastKeywords.some(k => msg.includes(k))) return "forecast";
-  return "spending";
-}
-
 export function buildBasePrompt(profile, summary, missing) {
   return `
 ROLE: Personal Finance AI
@@ -40,14 +33,15 @@ export function buildWealthPrompt(base) {
 
 MODE: WEALTH FORECAST SPECIALIST
 You are a wealth projection expert. Your job is to run forward-looking financial models.
-You have access to the 'wealth_forecast' tool only.
+You have access to 'sync_profile' and 'wealth_forecast'.
 
 INSTRUCTIONS:
-1. ALWAYS call 'wealth_forecast' with realistic assumptions.
+1. ALWAYS call 'sync_profile' FIRST with any profile data the user provides — salary, savings, or goals (e.g. "retire at 58" is a goals value). Save it before doing anything else.
+2. ALWAYS call 'wealth_forecast' with realistic assumptions.
    - Use the user's current savings as currentSavings.
    - Estimate monthlyContribution as (salary - typical expenses). Ask if unsure.
    - Default interestRate to 5% (S&P average) unless user specifies.
-2. After calling the tool, explain the result clearly: what the number means, assumptions made, and how to improve it.
-3. Offer 2-3 actionable levers: "increase monthly contribution by $X to reach Y sooner."
-4. If data is numeric and worth charting, append: [CHART_DATA: {"Year 5": amt, "Year 10": amt, ...}]`.trim();
+3. After calling the tool, explain the result clearly: what the number means, assumptions made, and how to improve it.
+4. Offer 2-3 actionable levers: "increase monthly contribution by $X to reach Y sooner."
+5. If data is numeric and worth charting, append: [CHART_DATA: {"Year 5": amt, "Year 10": amt, ...}]`.trim();
 }

@@ -1,4 +1,4 @@
-import React, { useState, useRef, Component, ErrorInfo, ReactNode } from 'react';
+import React, { useState, useRef, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { Send, Paperclip, X, TrendingUp, PiggyBank, Target, AlertTriangle, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import FinancialChart from './chart.tsx';
@@ -45,12 +45,18 @@ interface Profile {
   goals: string | null;
 }
 
+interface PiiStats {
+  counts: Record<string, number>;
+  preview: string;
+}
+
 interface Message {
   role: string;
   content: string;
   profile?: Profile;
   isPdf?: boolean;
   isError?: boolean;
+  piiStats?: PiiStats;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -88,9 +94,9 @@ function FinanceApp() {
   const currentStats = getLatestProfile();
   const hasProfile = currentStats.salary || currentStats.currentSavings || currentStats.goals;
 
-  const scrollToBottom = () => {
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, [messages, isLoading, isPdfLoading]);
 
   const addErrorMessage = (text: string) => {
     setMessages(prev => [...prev, { role: 'bot', content: text, isError: true }]);
@@ -149,13 +155,12 @@ function FinanceApp() {
 
         const data = await res.json();
         if (data.text) {
-          setMessages(prev => [...prev, { role: 'bot', content: data.text, profile: data.profile }]);
+          setMessages(prev => [...prev, { role: 'bot', content: data.text, profile: data.profile, piiStats: data.piiStats }]);
         }
       } catch (err: any) {
         addErrorMessage(err.message ?? 'Failed to process the PDF. Please try again.');
       } finally {
         setIsPdfLoading(false);
-        setTimeout(scrollToBottom, 100);
       }
       return;
     }
@@ -186,13 +191,12 @@ function FinanceApp() {
 
       const data = await res.json();
       if (data.text) {
-        setMessages(prev => [...prev, { role: 'bot', content: data.text, profile: data.profile }]);
+        setMessages(prev => [...prev, { role: 'bot', content: data.text, profile: data.profile, piiStats: data.piiStats }]);
       }
     } catch (err: any) {
       addErrorMessage(err.message ?? 'Could not reach the server. Is it running on port 3001?');
     } finally {
       setIsLoading(false);
-      setTimeout(scrollToBottom, 100);
     }
   };
 
@@ -217,7 +221,7 @@ function FinanceApp() {
           <div className="stat-card">
             <div className="stat-icon salary-icon"><TrendingUp size={14} /></div>
             <div className="stat-body">
-              <span className="stat-label">Monthly Income</span>
+              <span className="stat-label">Income</span>
               <span className="stat-value">{formatCurrency(currentStats.salary)}</span>
             </div>
           </div>
@@ -293,6 +297,12 @@ function FinanceApp() {
                       <ErrorBoundary fallback={<p className="render-error">Chart could not render.</p>}>
                         <FinancialChart rawData={m.content} />
                       </ErrorBoundary>
+                    )}
+                    {m.piiStats && Object.keys(m.piiStats.counts).length > 0 && (
+                      <details className="pii-shield">
+                        <summary>🔒 PII redacted before sending to AI — {Object.entries(m.piiStats.counts).map(([k, v]) => `${v} ${k}`).join(', ')}</summary>
+                        <pre className="pii-preview">{m.piiStats.preview}…</pre>
+                      </details>
                     )}
                   </div>
                 </ErrorBoundary>
